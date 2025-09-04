@@ -6,11 +6,27 @@
 </head>
 <body>
     <h2>Diagnostic Tool</h2>
-    <button onclick="startDiagnostics()">Start Diagnostics</button>
-    <iframe id="victimFrame" src="https://shop.app/"></iframe>
+    <button onclick="loadAndDiagnose()">Load Shop.App & Start Diagnostics</button>
+    <iframe id="victimFrame"></iframe>
+
     <script>
+        function loadAndDiagnose() {
+            const frame = document.getElementById('victimFrame');
+            const url = "https://shop.app/"; // Start with the homepage
+
+            // First, set the iframe's source to load the page
+            frame.src = url;
+
+            // Wait for the iframe to finish loading BEFORE injecting code
+            frame.onload = function() {
+                console.log("Iframe finished loading. Now injecting diagnostics...");
+                startDiagnostics(); // This function now runs after the page is ready
+            };
+        }
+
         function startDiagnostics() {
             const frame = document.getElementById('victimFrame');
+            // Now these will NOT be null because the iframe is loaded
             const frameWindow = frame.contentWindow;
             const frameDoc = frame.contentDocument;
 
@@ -48,9 +64,11 @@
                         return originalLeave.apply(this, arguments);
                     };
                 }
+
+                console.log("[DIAG] Diagnostics active. Now try changing the hash.");
             `;
             (frameDoc.head || frameDoc.documentElement).appendChild(script);
-            console.log("Diagnostics injected.");
+            console.log("Diagnostics injected into iframe.");
         }
     </script>
 </body>
